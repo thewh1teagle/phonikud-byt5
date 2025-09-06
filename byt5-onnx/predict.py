@@ -8,8 +8,8 @@ from tap import Tap
 
 class PredictArgs(Tap):
     model_path: str = "./onnx_model"  # Path to ONNX model directory
-    max_length: int = 256  # Maximum sequence length for generation (reduced for appropriate phoneme output)
-    num_beams: int = 4  # Number of beams for beam search
+    max_length: int = 512  # Maximum sequence length for generation
+    num_beams: int = 2  # Number of beams for beam search
 
 
 def main():
@@ -71,9 +71,8 @@ def main():
             num_beams=args.num_beams,
             do_sample=False,
             early_stopping=True,
-            repetition_penalty=1.2,
-            no_repeat_ngram_size=3,
-            length_penalty=1.0,
+            pad_token_id=tokenizer.pad_token_id,
+            eos_token_id=tokenizer.eos_token_id,
         )
         
         # Decode the prediction

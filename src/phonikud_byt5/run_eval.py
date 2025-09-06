@@ -45,9 +45,7 @@ def predict_batch(model, tokenizer, texts, max_length=512, device=None):
             num_beams=4,
             do_sample=False,
             early_stopping=True,
-            repetition_penalty=1.2,
-            no_repeat_ngram_size=3,
-            length_penalty=1.0,
+            repetition_penalty=1.1,  # Gentler repetition penalty
         )
     
     # Decode predictions
