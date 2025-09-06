@@ -31,3 +31,7 @@ uv run src/phonikud_byt5/run_train.py
 ```console
 uv run wandb login
 ```
+
+## Onnx
+
+See [byt5-onnx](./byt5-onnx/)
