@@ -4,6 +4,7 @@ import json
 from typing import Optional, Tuple, List
 from dataclasses import dataclass
 from pathlib import Path
+from datetime import datetime
 
 import jiwer
 
@@ -74,7 +75,17 @@ def save_train_metadata(val_indices, lines, val_split, split_seed, max_lines, da
     """Save training metadata to checkpoint directory"""
     os.makedirs(ckpt_dir, exist_ok=True)
     
+    # Get current UTC date in yyyy-mm-dd format
+    utc_date = datetime.utcnow().strftime("%Y-%m-%d")
+    
+    # Get absolute paths of all files in data directory
+    data_path = Path(data_dir)
+    data_files = [str(file.absolute()) for file in data_path.glob("*.txt")]
+    data_files.sort()  # Sort for consistency
+    
     metadata = {
+        "training_date_utc": utc_date,
+        "data_files": data_files,
         "val_split": val_split,
         "split_seed": split_seed,
         "max_lines": max_lines,

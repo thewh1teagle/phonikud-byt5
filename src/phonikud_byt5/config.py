@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 from tap import Tap
 
 
@@ -17,7 +17,7 @@ class TrainArgs(Tap):
     num_epochs: int = 3
     val_split: float = 0.01  # 1% for validation
     split_seed: int = 42
-    device: str = "mps"  # Device to use: "mps", "cuda", "cpu"
+    device: Literal["mps", "cuda", "cpu"] = "cuda"  # Device to use: "mps", "cuda", "cpu"
     
     # Optional limits for testing
     max_lines: Optional[int] = None  # Limit dataset size for testing
