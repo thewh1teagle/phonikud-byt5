@@ -21,65 +21,76 @@ class BestLastModelCallback(TrainerCallback):
         self.best_step = 0
         self.last_eval_loss = None
         self.last_step = 0
+        print(f"🔍 DEBUG: BestLastModelCallback initialized with ckpt_dir={ckpt_dir}, use_wandb={use_wandb}")
     
-    def on_evaluate(self, args, state, control, model=None, logs=None, **kwargs):
-        """Called after evaluation"""
+    def on_log(self, args, state, control, model=None, logs=None, **kwargs):
+        """Called when metrics are logged - captures eval_loss"""
+        print(f"🔍 DEBUG: on_log called with logs: {logs}")
         if logs and 'eval_loss' in logs:
             current_eval_loss = logs['eval_loss']
             current_step = state.global_step
             
-            # Save last model (always)
-            last_model_path = f"{self.ckpt_dir}/last_model"
-            model.save_pretrained(last_model_path)
-            self.tokenizer.save_pretrained(last_model_path)
-            
-            self.last_eval_loss = current_eval_loss
-            self.last_step = current_step
-            
-            # Save best model (if improved)
-            if current_eval_loss < self.best_eval_loss:
-                self.best_eval_loss = current_eval_loss
-                self.best_step = current_step
+            try:
+                # Save last model (always)
+                last_model_path = f"{self.ckpt_dir}/last_model"
+                print(f"🔍 DEBUG: Saving last model to {last_model_path}")
+                model.save_pretrained(last_model_path)
+                self.tokenizer.save_pretrained(last_model_path)
+                print(f"📦 Last model saved successfully!")
                 
-                best_model_path = f"{self.ckpt_dir}/best_model"
-                model.save_pretrained(best_model_path)
-                self.tokenizer.save_pretrained(best_model_path)
+                self.last_eval_loss = current_eval_loss
+                self.last_step = current_step
                 
-                print(f"🏆 New best model saved! Loss: {self.best_eval_loss:.4f} (step {self.best_step})")
-                
-                # Log to wandb if enabled
-                if self.use_wandb:
-                    wandb.log({
-                        "best_eval_loss": self.best_eval_loss,
-                        "best_model_step": self.best_step,
-                    }, step=current_step)
-            
-            # Update metadata
-            best_model_info = {
-                "path": "best_model",
-                "eval_loss": self.best_eval_loss,
-                "step": self.best_step
-            }
-            
-            last_model_info = {
-                "path": "last_model", 
-                "eval_loss": self.last_eval_loss,
-                "step": self.last_step
-            }
-            
-            # Add wandb info to metadata if available
-            if self.use_wandb and hasattr(wandb, 'run') and wandb.run is not None:
-                wandb_info = {
-                    "run_id": wandb.run.id,
-                    "run_name": wandb.run.name,
-                    "project": wandb.run.project,
-                    "entity": wandb.run.entity,
+                # Save best model (if improved)
+                if current_eval_loss < self.best_eval_loss:
+                    self.best_eval_loss = current_eval_loss
+                    self.best_step = current_step
+                    
+                    best_model_path = f"{self.ckpt_dir}/best_model"
+                    print(f"🔍 DEBUG: Saving best model to {best_model_path}")
+                    model.save_pretrained(best_model_path)
+                    self.tokenizer.save_pretrained(best_model_path)
+                    
+                    print(f"🏆 New best model saved! Loss: {self.best_eval_loss:.4f} (step {self.best_step})")
+                    
+                    # Log to wandb if enabled
+                    if self.use_wandb:
+                        wandb.log({
+                            "best_eval_loss": self.best_eval_loss,
+                            "best_model_step": self.best_step,
+                        }, step=current_step)
+                    
+                # Update metadata
+                best_model_info = {
+                    "path": "best_model",
+                    "eval_loss": self.best_eval_loss,
+                    "step": self.best_step
                 }
-                best_model_info["wandb"] = wandb_info
-                last_model_info["wandb"] = wandb_info
-            
-            update_metadata_with_models(self.ckpt_dir, best_model_info, last_model_info)
-            print(f"📊 Models updated - Best: {self.best_eval_loss:.4f}, Last: {self.last_eval_loss:.4f}")
+                
+                last_model_info = {
+                    "path": "last_model", 
+                    "eval_loss": self.last_eval_loss,
+                    "step": self.last_step
+                }
+                
+                # Add wandb info to metadata if available
+                if self.use_wandb and hasattr(wandb, 'run') and wandb.run is not None:
+                    wandb_info = {
+                        "run_id": wandb.run.id,
+                        "run_name": wandb.run.name,
+                        "project": wandb.run.project,
+                        "entity": wandb.run.entity,
+                    }
+                    best_model_info["wandb"] = wandb_info
+                    last_model_info["wandb"] = wandb_info
+                
+                update_metadata_with_models(self.ckpt_dir, best_model_info, last_model_info)
+                print(f"📊 Models updated - Best: {self.best_eval_loss:.4f}, Last: {self.last_eval_loss:.4f}")
+                    
+            except Exception as e:
+                print(f"❌ ERROR in callback: {e}")
+                import traceback
+                traceback.print_exc()
 
 
 class HebrewG2PDataset(Dataset):
@@ -140,7 +151,6 @@ def main():
                 "max_context_length": args.max_context_length,
                 "val_split": args.val_split,
                 "eval_steps": args.eval_steps,
-                "save_steps": args.save_steps,
             }
         )
         report_to = ["wandb"]
@@ -187,9 +197,8 @@ def main():
         logging_steps=args.logging_steps,
         eval_strategy="steps",
         eval_steps=args.eval_steps,
-        save_steps=args.save_steps,
-        save_total_limit=3,
-        load_best_model_at_end=True,
+        save_strategy="no",  # Disable automatic checkpoint saving
+        load_best_model_at_end=False,  # We handle this in our callback
         metric_for_best_model="eval_loss",
         report_to=report_to,
     )
