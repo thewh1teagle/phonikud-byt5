@@ -9,6 +9,7 @@ class TrainArgs(Tap):
     
     # Model
     model_name: str = "google/byt5-small"  # ByT5 model to use
+    # model_name = "./checkpoints/best_model"
     max_context_length: int = 512  # Max sequence length
     
     # Training
