@@ -63,16 +63,13 @@ def main():
         print(f"🔄 Running inference...")
         
         # Generate prediction using the ONNX model
-        # Optimum makes this exactly the same as using the original PyTorch model
+        # ONNX runtime has limited parameter support - keeping it minimal
         outputs = model.generate(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            max_length=args.max_length,
-            num_beams=args.num_beams,
+            max_length=512,  # Even shorter to force early termination
+            num_beams=1,     # Greedy search only
             do_sample=False,
-            early_stopping=True,
-            pad_token_id=tokenizer.pad_token_id,
-            eos_token_id=tokenizer.eos_token_id,
         )
         
         # Decode the prediction
