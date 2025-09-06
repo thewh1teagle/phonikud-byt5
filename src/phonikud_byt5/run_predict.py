@@ -46,7 +46,7 @@ def main():
     args = PredictArgs().parse_args()
     
     # Hebrew text to predict
-    hebrew_text = "שלום עולם!"
+    hebrew_text = " בוא נשחק בירושלים! בוא תרד לאכול תרד! הוא רצה את זה גם אבל היא רצה מהר והקדימה אותו!"
     
     print(f"📦 Loading model from {args.model_path}...")
     

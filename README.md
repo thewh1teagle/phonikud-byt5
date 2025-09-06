@@ -11,7 +11,7 @@ sudo apt install -y p7zip-full wget
 wget https://huggingface.co/datasets/thewh1teagle/phonikud-phonemes-data/resolve/main/knesset_phonemes_v1.txt.7z
 7z x knesset_phonemes_v1.txt.7z
 mkdir data
-head -n 100000 knesset_phonemes_v1.txt > ./data/data.txt
+head -n 2000000 knesset_phonemes_v1.txt > ./data/data.txt
 ```
 
 Unvocalized data.txt
@@ -19,6 +19,7 @@ Unvocalized data.txt
 ```console
 uv run python -c "import re, pathlib; p=pathlib.Path('data/data.txt'); txt=p.read_text(encoding='utf-8'); txt=re.sub(r'[|\u0590-\u05cf]', '', txt); pathlib.Path('data/data_clean.txt').write_text(txt, encoding='utf-8')"
 rm -rf ./data/data.txt
+head ./data/data_clean.txt
 ```
 
 ```console
