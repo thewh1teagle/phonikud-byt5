@@ -35,3 +35,30 @@ uv run wandb login
 ## Onnx
 
 See [byt5-onnx](./byt5-onnx/)
+
+## Monitor training in Telegram
+
+```console
+CHAT_ID="-1002594452051"
+BOT_TOKEN="bot token"
+
+while true; do
+  # run prediction
+  OUTPUT=$(uv run src/phonikud_byt5/run_predict.py)
+
+  # extract best_model step and loss from metadata.json
+  STEP=$(jq -r '.best_model.step' ./checkpoints/metadata.json)
+  LOSS=$(jq -r '.best_model.eval_loss' ./checkpoints/metadata.json)
+
+  # save to file
+  echo "$OUTPUT" > /tmp/g2p_result.txt
+
+  # send to telegram
+  curl -s "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+    --data-urlencode "chat_id=${CHAT_ID}" \
+    --data-urlencode "text=G2P result v1 (step: $STEP, loss: $LOSS):\n$OUTPUT"
+
+  # wait 20 min
+  sleep 1200
+done
+```
