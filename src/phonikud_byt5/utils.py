@@ -71,7 +71,7 @@ def prepare_indices(lines: List[TrainingLine], val_split: float, split_seed: int
     return train_indices, val_indices
 
 
-def save_train_metadata(val_indices, lines, val_split, split_seed, max_lines, data_dir, ckpt_dir):
+def save_train_metadata(val_indices, lines, val_split, split_seed, max_lines, data_dir, ckpt_dir, best_model_info=None, last_model_info=None):
     """Save training metadata to checkpoint directory"""
     os.makedirs(ckpt_dir, exist_ok=True)
     
@@ -94,7 +94,37 @@ def save_train_metadata(val_indices, lines, val_split, split_seed, max_lines, da
         "val_indices": val_indices
     }
     
+    # Add best and last model information if provided
+    if best_model_info:
+        metadata["best_model"] = best_model_info
+    
+    if last_model_info:
+        metadata["last_model"] = last_model_info
+    
     with open(os.path.join(ckpt_dir, "metadata.json"), 'w') as f:
+        json.dump(metadata, f, indent=2)
+
+
+def update_metadata_with_models(ckpt_dir, best_model_info, last_model_info):
+    """Update existing metadata.json with best and last model information"""
+    metadata_path = os.path.join(ckpt_dir, "metadata.json")
+    
+    # Read existing metadata
+    if os.path.exists(metadata_path):
+        with open(metadata_path, 'r') as f:
+            metadata = json.load(f)
+    else:
+        metadata = {}
+    
+    # Update with model information
+    if best_model_info:
+        metadata["best_model"] = best_model_info
+    
+    if last_model_info:
+        metadata["last_model"] = last_model_info
+    
+    # Save updated metadata
+    with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=2)
 
 

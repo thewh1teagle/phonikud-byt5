@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from typing import Literal
 import torch
 from transformers import T5ForConditionalGeneration, ByT5Tokenizer
 from tqdm import tqdm
@@ -9,12 +10,12 @@ from utils import read_lines, calculate_wer_cer_metrics, TrainingLine
 
 
 class EvalArgs(Tap):
-    model_path: str  # Path to trained model directory  
-    data_dir: str    # Path to test data
+    model_path: str = "checkpoints/final_model"  # Path to trained model directory  
+    data_dir: str = "data"    # Path to test data
     max_lines: int = 1000  # Limit for testing
     max_context_length: int = 512
     batch_size: int = 8
-    device: str = "mps"  # Device to use: "mps", "cuda", "cpu"
+    device: Literal["mps", "cuda", "cpu"] = "cuda"  # Device to use: "mps", "cuda", "cpu"
     
     # For single prediction
     text: str = None  # Single Hebrew text to predict

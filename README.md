@@ -18,4 +18,11 @@ Unvocalized data.txt
 
 ```console
 uv run python -c "import re, pathlib; p=pathlib.Path('data/data.txt'); txt=p.read_text(encoding='utf-8'); txt=re.sub(r'[|\u0590-\u05cf]', '', txt); pathlib.Path('data/data_clean.txt').write_text(txt, encoding='utf-8')"
+rm -rf ./data/data.txt
+```
+
+## Logs
+
+```console
+uv run wandb login
 ```

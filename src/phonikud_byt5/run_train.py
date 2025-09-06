@@ -2,11 +2,84 @@
 
 import os
 import torch
-from transformers import T5ForConditionalGeneration, ByT5Tokenizer, Trainer, TrainingArguments
+from transformers import T5ForConditionalGeneration, ByT5Tokenizer, Trainer, TrainingArguments, TrainerCallback
 from torch.utils.data import Dataset
+import wandb
 
 from config import TrainArgs
-from utils import prepare_lines, calculate_wer_cer_metrics, log_metrics, TrainingLine
+from utils import prepare_lines, calculate_wer_cer_metrics, log_metrics, TrainingLine, update_metadata_with_models
+
+
+class BestLastModelCallback(TrainerCallback):
+    """Custom callback to save best and last models during training"""
+    
+    def __init__(self, ckpt_dir, tokenizer, use_wandb=False):
+        self.ckpt_dir = ckpt_dir
+        self.tokenizer = tokenizer
+        self.use_wandb = use_wandb
+        self.best_eval_loss = float('inf')
+        self.best_step = 0
+        self.last_eval_loss = None
+        self.last_step = 0
+    
+    def on_evaluate(self, args, state, control, model=None, logs=None, **kwargs):
+        """Called after evaluation"""
+        if logs and 'eval_loss' in logs:
+            current_eval_loss = logs['eval_loss']
+            current_step = state.global_step
+            
+            # Save last model (always)
+            last_model_path = f"{self.ckpt_dir}/last_model"
+            model.save_pretrained(last_model_path)
+            self.tokenizer.save_pretrained(last_model_path)
+            
+            self.last_eval_loss = current_eval_loss
+            self.last_step = current_step
+            
+            # Save best model (if improved)
+            if current_eval_loss < self.best_eval_loss:
+                self.best_eval_loss = current_eval_loss
+                self.best_step = current_step
+                
+                best_model_path = f"{self.ckpt_dir}/best_model"
+                model.save_pretrained(best_model_path)
+                self.tokenizer.save_pretrained(best_model_path)
+                
+                print(f"🏆 New best model saved! Loss: {self.best_eval_loss:.4f} (step {self.best_step})")
+                
+                # Log to wandb if enabled
+                if self.use_wandb:
+                    wandb.log({
+                        "best_eval_loss": self.best_eval_loss,
+                        "best_model_step": self.best_step,
+                    }, step=current_step)
+            
+            # Update metadata
+            best_model_info = {
+                "path": "best_model",
+                "eval_loss": self.best_eval_loss,
+                "step": self.best_step
+            }
+            
+            last_model_info = {
+                "path": "last_model", 
+                "eval_loss": self.last_eval_loss,
+                "step": self.last_step
+            }
+            
+            # Add wandb info to metadata if available
+            if self.use_wandb and hasattr(wandb, 'run') and wandb.run is not None:
+                wandb_info = {
+                    "run_id": wandb.run.id,
+                    "run_name": wandb.run.name,
+                    "project": wandb.run.project,
+                    "entity": wandb.run.entity,
+                }
+                best_model_info["wandb"] = wandb_info
+                last_model_info["wandb"] = wandb_info
+            
+            update_metadata_with_models(self.ckpt_dir, best_model_info, last_model_info)
+            print(f"📊 Models updated - Best: {self.best_eval_loss:.4f}, Last: {self.last_eval_loss:.4f}")
 
 
 class HebrewG2PDataset(Dataset):
@@ -53,6 +126,29 @@ def main():
     print(f"Data dir: {args.data_dir}")
     print(f"Model: {args.model_name}")
     
+    # Initialize wandb if not disabled
+    if args.wandb_mode != "disabled":
+        wandb.init(
+            project=args.wandb_project,
+            entity=args.wandb_entity,
+            mode=args.wandb_mode,
+            config={
+                "model_name": args.model_name,
+                "batch_size": args.batch_size,
+                "learning_rate": args.learning_rate,
+                "num_epochs": args.num_epochs,
+                "max_context_length": args.max_context_length,
+                "val_split": args.val_split,
+                "eval_steps": args.eval_steps,
+                "save_steps": args.save_steps,
+            }
+        )
+        report_to = ["wandb"]
+        print(f"📊 Wandb initialized: {args.wandb_mode} mode")
+    else:
+        report_to = []
+        print("📊 Wandb disabled")
+    
     # Load data
     train_lines, val_lines = prepare_lines(args)
     
@@ -88,15 +184,18 @@ def main():
         per_device_eval_batch_size=args.batch_size,
         learning_rate=args.learning_rate,
         warmup_steps=100,
-        logging_steps=100,
+        logging_steps=args.logging_steps,
         eval_strategy="steps",
-        eval_steps=500,
-        save_steps=1000,
+        eval_steps=args.eval_steps,
+        save_steps=args.save_steps,
         save_total_limit=3,
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
-        report_to=[],
+        report_to=report_to,
     )
+    
+    # Initialize callback for saving best/last models
+    callback = BestLastModelCallback(args.ckpt_dir, tokenizer, use_wandb=(args.wandb_mode != "disabled"))
     
     # Initialize trainer
     trainer = Trainer(
@@ -104,19 +203,24 @@ def main():
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
+        callbacks=[callback],
     )
     
     # Start training
     print("🏋️ Starting training...")
-    trainer.train()
+    result = trainer.train()
     
-    # Save final model
-    final_model_path = f"{args.ckpt_dir}/final_model"
-    trainer.save_model(final_model_path)
-    tokenizer.save_pretrained(final_model_path)
+    print(f"✅ Training complete!")
+    print(f"🏆 Best model: {callback.best_eval_loss:.4f} (step {callback.best_step})")
+    print(f"📦 Last model: {callback.last_eval_loss:.4f} (step {callback.last_step})")
+    print(f"📁 Models saved in: {args.ckpt_dir}/best_model and {args.ckpt_dir}/last_model")
+    print(f"📋 Metadata continuously updated during training")
     
-    print(f"✅ Training complete! Model saved to {final_model_path}")
+    # Close wandb if it was initialized
+    if args.wandb_mode != "disabled":
+        wandb.finish()
+        print("📊 Wandb session completed")
 
 
 if __name__ == "__main__":
