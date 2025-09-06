@@ -1,6 +1,6 @@
 # phonikud-byt5
 
-Hebrew G2P with byt5 model based on Phonikud
+Hebrew G2P with byt5 model based on [Phonikud](https://phonikud.github.io)
 
 ## Prepare
 
