@@ -7,7 +7,7 @@ from tap import Tap
 
 
 class PredictArgs(Tap):
-    model_path: str = "checkpoints/final_model"  # Path to trained model directory  
+    model_path: str = "checkpoints/best_model"  # Path to trained model directory  
     device: Literal["mps", "cuda", "cpu"] = "cuda"  # Device to use: "mps", "cuda", "cpu"
     max_context_length: int = 512
 
