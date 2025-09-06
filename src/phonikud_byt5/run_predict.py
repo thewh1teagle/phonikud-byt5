@@ -9,7 +9,7 @@ from tap import Tap
 class PredictArgs(Tap):
     model_path: str = "checkpoints/best_model"  # Path to trained model directory  
     device: Literal["mps", "cuda", "cpu"] = "cuda"  # Device to use: "mps", "cuda", "cpu"
-    max_context_length: int = 512
+    max_context_length: int = 256  # Reduced for more appropriate phoneme output length
 
 
 def predict_text(model, tokenizer, text, max_length=512, device=None):
@@ -35,6 +35,10 @@ def predict_text(model, tokenizer, text, max_length=512, device=None):
             max_length=max_length,
             num_beams=4,
             do_sample=False,
+            early_stopping=True,
+            repetition_penalty=1.2,
+            no_repeat_ngram_size=3,
+            length_penalty=1.0,
         )
     
     # Decode prediction
