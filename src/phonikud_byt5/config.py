@@ -8,8 +8,8 @@ class TrainArgs(Tap):
     ckpt_dir: str = "checkpoints"  # Where to save model checkpoints
     
     # Model
-    model_name: str = "google/byt5-small"  # ByT5 model to use
-    # model_name = "./checkpoints/best_model"
+    # model_name: str = "google/byt5-small"  # ByT5 model to use
+    model_name = "./checkpoints/best_model"  # Best model
     max_context_length: int = 512  # Max sequence length
     
     # Training

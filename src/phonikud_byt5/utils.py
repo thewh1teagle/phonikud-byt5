@@ -71,7 +71,7 @@ def prepare_indices(lines: List[TrainingLine], val_split: float, split_seed: int
     return train_indices, val_indices
 
 
-def save_train_metadata(val_indices, lines, val_split, split_seed, max_lines, data_dir, ckpt_dir, best_model_info=None, last_model_info=None):
+def save_train_metadata(val_indices, lines, val_split, split_seed, max_lines, data_dir, ckpt_dir, best_model_info=None, last_model_info=None, wandb_info=None):
     """Save training metadata to checkpoint directory"""
     os.makedirs(ckpt_dir, exist_ok=True)
     
@@ -93,6 +93,10 @@ def save_train_metadata(val_indices, lines, val_split, split_seed, max_lines, da
         "total_lines": len(lines),
         "val_indices": val_indices
     }
+    
+    # Add wandb information if provided
+    if wandb_info:
+        metadata["wandb"] = wandb_info
     
     # Add best and last model information if provided
     if best_model_info:
@@ -128,7 +132,7 @@ def update_metadata_with_models(ckpt_dir, best_model_info, last_model_info):
         json.dump(metadata, f, indent=2)
 
 
-def prepare_lines(args: TrainArgs) -> Tuple[List[TrainingLine], List[TrainingLine]]:
+def prepare_lines(args: TrainArgs, wandb_info=None) -> Tuple[List[TrainingLine], List[TrainingLine]]:
     """Higher level function that reads lines, splits them, and saves metadata"""
     # Read all lines
     print("📖🔍 Reading lines from dataset...")
@@ -143,7 +147,7 @@ def prepare_lines(args: TrainArgs) -> Tuple[List[TrainingLine], List[TrainingLin
 
     # Save metadata
     save_train_metadata(
-        val_indices, lines, args.val_split, args.split_seed, args.max_lines, args.data_dir, args.ckpt_dir
+        val_indices, lines, args.val_split, args.split_seed, args.max_lines, args.data_dir, args.ckpt_dir, wandb_info=wandb_info
     )
 
     # Print samples

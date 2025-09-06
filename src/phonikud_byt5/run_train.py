@@ -75,11 +75,13 @@ class BestLastModelCallback(TrainerCallback):
                 
                 # Add wandb info to metadata if available
                 if self.use_wandb and hasattr(wandb, 'run') and wandb.run is not None:
+                    wandb_url = f"https://wandb.ai/{wandb.run.entity}/{wandb.run.project}/runs/{wandb.run.id}"
                     wandb_info = {
                         "run_id": wandb.run.id,
                         "run_name": wandb.run.name,
                         "project": wandb.run.project,
                         "entity": wandb.run.entity,
+                        "url": wandb_url,
                     }
                     best_model_info["wandb"] = wandb_info
                     last_model_info["wandb"] = wandb_info
@@ -159,8 +161,20 @@ def main():
         report_to = []
         print("📊 Wandb disabled")
     
+    # Prepare wandb info if enabled
+    wandb_info = None
+    if args.wandb_mode != "disabled" and hasattr(wandb, 'run') and wandb.run is not None:
+        wandb_url = f"https://wandb.ai/{wandb.run.entity}/{wandb.run.project}/runs/{wandb.run.id}"
+        wandb_info = {
+            "run_id": wandb.run.id,
+            "run_name": wandb.run.name,
+            "project": wandb.run.project,
+            "entity": wandb.run.entity,
+            "url": wandb_url,
+        }
+    
     # Load data
-    train_lines, val_lines = prepare_lines(args)
+    train_lines, val_lines = prepare_lines(args, wandb_info=wandb_info)
     
     # Initialize model and tokenizer
     print(f"📦 Loading {args.model_name}...")
