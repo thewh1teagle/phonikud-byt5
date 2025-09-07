@@ -2,6 +2,10 @@
 
 Hebrew G2P with byt5 model based on [Phonikud](https://phonikud.github.io)
 
+<img width="800" alt="image" src="https://github.com/user-attachments/assets/67e57b8c-372e-4dac-bd60-7db8a5ebe705" />
+
+
+
 ## Prepare
 
 ```console
