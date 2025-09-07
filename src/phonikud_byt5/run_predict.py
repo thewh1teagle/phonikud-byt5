@@ -49,7 +49,7 @@ def main():
     args = PredictArgs().parse_args()
     
     # Hebrew text to predict
-    hebrew_text = " בוא נשחק בירושלים! בוא תרד לאכול תרד! הוא רצה את זה גם אבל היא רצה מהר והקדימה אותו!"
+    hebrew_text = "בבוקר קריר בירושלים, ג’ירפה שהחליטה שהיא רוצה לחזק את הכושר שלה רצה בריצה ארוכה לאורך השדרה, ובסוף עצרה ליד דוכן תרד טרי."
     
     print(f"📦 Loading model from {args.model_path}...")
     
